@@ -3,7 +3,7 @@
 # Create data folder if it doesn't exist
 mkdir -p ../data
 
-TARGET="127.0.0.1"
+TARGET="192.168.100.96"
 
 echo "[+] Starting Network Scan..."
 
