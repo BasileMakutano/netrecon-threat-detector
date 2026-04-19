@@ -2,24 +2,24 @@ def read_file(filepath):
     try:
         with open(filepath, "r") as f:
             return f.readlines()
-    except FileNotFoundError:
-        print(f"[!] File not found: {filepath}")
+    except:
         return []
 
 
-def extract_open_ports(nmap_data):
+def extract_open_ports(lines):
     ports = []
-    for line in nmap_data:
-        if "open" in line:
+
+    for line in lines:
+        if "/tcp" in line and "open" in line:
             parts = line.split()
-            if len(parts) > 0:
-                ports.append(parts[0])
+            port_proto = parts[0]  # e.g. 80/tcp
+            port = port_proto.split("/")[0]
+
+            service = parts[2] if len(parts) > 2 else "unknown"
+
+            ports.append({
+                "port": port,
+                "service": service
+            })
+
     return ports
-
-
-def extract_listening_services(conn_data):
-    services = []
-    for line in conn_data:
-        if "LISTEN" in line or "tcp" in line:
-            services.append(line.strip())
-    return services
