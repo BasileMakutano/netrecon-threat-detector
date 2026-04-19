@@ -9,13 +9,13 @@ echo "[+] Starting Network Scan..."
 
 # Nmap scan
 echo "[+] Running Nmap..."
-nmap -sS -oN ../data/nmap.txt $TARGET
+nmap -sS -sU-oN ../data/nmap.txt $TARGET
 
 # Active connections
 echo "[+] Capturing active connections..."
 ss -tuln > ../data/connections.txt
 
-# Packet capture (5 seconds only for demo)
+# Packet capture 
 echo "[+] Capturing traffic..."
 timeout 5 tcpdump -w ../data/traffic.pcap > /dev/null 2>&1
 
