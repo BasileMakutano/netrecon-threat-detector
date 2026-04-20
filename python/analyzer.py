@@ -12,9 +12,8 @@ def extract_open_ports(lines):
     for line in lines:
         if "/tcp" in line and "open" in line:
             parts = line.split()
-            port_proto = parts[0]  # e.g. 80/tcp
-            port = port_proto.split("/")[0]
 
+            port = int(parts[0].split("/")[0])
             service = parts[2] if len(parts) > 2 else "unknown"
 
             ports.append({

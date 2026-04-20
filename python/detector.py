@@ -1,32 +1,31 @@
-from analyzer import read_file, extract_open_ports, extract_listening_services
+previous_ports = set()
 
+def detect_threats(port_list):
+    global previous_ports
 
-def detect():
-    print("[+] Running Threat Detection...\n")
+    alerts = 0
+    messages = []
 
-    nmap_data = read_file("../data/nmap.txt")
-    conn_data = read_file("../data/connections.txt")
+    current_ports = set([p["port"] for p in port_list])
+    new_ports = current_ports - previous_ports
 
-    ports = extract_open_ports(nmap_data)
-    services = extract_listening_services(conn_data)
+    if len(new_ports) > 5:
+        alerts += 2
+        messages.append("Possible Port Scan Detected")
 
-    print("[+] Open Ports Detected:")
-    for port in ports:
-        print(f" - {port}")
+    if len(current_ports) > 15:
+        alerts += 1
+        messages.append("Too many open ports")
 
-    print("\n[+] Active Services:")
-    for service in services[:5]:  # limit output
-        print(f" - {service}")
+    for p in current_ports:
+        if p in [22, 3389]:
+            alerts += 1
+            messages.append(f"Sensitive port exposed: {p}")
 
-    # Simple detection rules
-    if len(ports) > 5:
-        print("\n[!] ALERT: Too many open ports! Possible risk.")
+    if len(port_list) > 20:
+        alerts += 2
+        messages.append("Possible brute-force behavior")
 
-    if len(services) > 10:
-        print("[!] ALERT: High number of active connections!")
+    previous_ports = current_ports
 
-    print("\n[+] Detection complete.")
-
-
-if __name__ == "__main__":
-    detect()
+    return alerts, messages

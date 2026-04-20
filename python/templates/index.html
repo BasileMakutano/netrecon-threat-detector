@@ -1,69 +1,223 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>NetRecon Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<title>NetRecon Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<style>
+body {
+    background: #0b1220;
+    color: #e6eef8;
+}
+
+.card {
+    background: #111827;
+    border: none;
+    border-radius: 12px;
+}
+
+.low { color: #22c55e; }
+.medium { color: #f59e0b; }
+.high { color: #ef4444; }
+
+.table {
+    background: #111827;
+}
+
+.table th {
+    color: #9fb2d4;
+}
+
+.navbar {
+    background: #020617;
+}
+
+.badge {
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+.glow {
+    animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 5px red; }
+    to { text-shadow: 0 0 15px red; }
+}
+
+/* Alert popup */
+#alert-box {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ef4444;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    display: none;
+    z-index: 999;
+}
+</style>
 </head>
 
-<body style="background:#0f1724; color:white;">
+<body>
 
-<div class="container mt-4">
+<!-- ALERT POPUP -->
+<div id="alert-box">⚠️ Threat Detected!</div>
 
-    <h2>NetRecon Dashboard</h2>
+<!-- NAVBAR -->
+<nav class="navbar px-4">
+    <span class="navbar-brand text-light">
+        <i class="fa-solid fa-shield-halved"></i> NetRecon
+    </span>
+    <button onclick="location.reload()" class="btn btn-outline-light btn-sm">Refresh</button>
+</nav>
 
-    <div class="row mt-4">
+<div class="container-fluid mt-4">
+
+    <!-- TOP CARDS -->
+    <div class="row mb-4">
+
         <div class="col-md-3">
-            <div class="card p-3 bg-dark">
-                <h4>{{ ports|length }}</h4>
-                <p>Open Ports</p>
-
-                <h5>{{ alerts }}</h5>
-                <p>Alerts</p>
-
-                <a href="/scan" class="btn btn-outline-light">Run Scan</a>
+            <div class="card p-3">
+                <h6 class="text-light">Open Ports</h6>
+                <h2 id="port-count" class="text-light">0</h2>
             </div>
         </div>
 
-        <div class="col-md-9">
-            <div class="card p-3 bg-dark">
-                <h4>Detected Ports</h4>
-
-                <table class="table text-light mt-3">
-                    <thead>
-                        <tr>
-                            <th>Host</th>
-                            <th>Port</th>
-                            <th>Service</th>
-                            <th>Severity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                    {% for port in ports %}
-                        <tr>
-                            <td>{{ port.host }}</td>
-                            <td>{{ port.port }}</td>
-                            <td>{{ port.service }}</td>
-                            <td>
-                                {% if port.severity == "high" %}
-                                    <span class="text-danger">HIGH</span>
-                                {% elif port.severity == "medium" %}
-                                    <span class="text-warning">MEDIUM</span>
-                                {% else %}
-                                    <span class="text-success">LOW</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-
-                    </tbody>
-                </table>
-
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="text-light">Alerts</h6>
+                <h2 id="alert-count" class="high">0</h2>
             </div>
         </div>
+
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="text-light">Status</h6>
+                <h5 id="status-text" class="low">Secure</h5>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card p-3">
+                <h6 class="text-light">Last Update</h6>
+                <h6 id="last-update" class="text-light">--</h6>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="mb-3">
+        <a href="/scan" class="btn btn-outline-light me-2">
+            <i class="fa-solid fa-play"></i> Run Scan
+        </a>
+
+        <a href="/history" class="btn btn-outline-light me-2">
+            <i class="fa-solid fa-clock"></i> History
+        </a>
+
+        <a href="/report" class="btn btn-outline-light">
+            <i class="fa-solid fa-file"></i> Download Report
+        </a>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card p-3">
+        <h5>Network Activity</h5>
+
+        <table class="table table-borderless mt-3">
+            <thead>
+                <tr>
+                    <th>Host</th>
+                    <th>Port</th>
+                    <th>Service</th>
+                    <th>Severity</th>
+                </tr>
+            </thead>
+
+            <tbody id="table-body"></tbody>
+
+        </table>
     </div>
 
 </div>
+
+<script>
+function showAlert(messages) {
+    const box = document.getElementById("alert-box");
+    box.innerHTML = "⚠️ " + messages.join("<br>");
+    box.style.display = "block";
+
+    setTimeout(() => box.style.display = "none", 4000);
+}
+
+async function fetchData() {
+    try {
+        const res = await fetch("/data");
+        const data = await res.json();
+
+        document.getElementById("port-count").innerText = data.ports.length;
+        document.getElementById("alert-count").innerText = data.alerts;
+
+        // STATUS
+        const status = document.getElementById("status-text");
+
+        if (data.alerts > 2) {
+            status.innerText = "Critical";
+            status.className = "high glow";
+            if (data.messages && data.messages.length > 0) {
+                showAlert(data.messages);
+            }
+        } else if (data.alerts > 0) {
+            status.innerText = "Warning";
+            status.className = "medium";
+        } else {
+            status.innerText = "Secure";
+            status.className = "low";
+        }
+
+        // TIME
+        document.getElementById("last-update").innerText = new Date().toLocaleTimeString();
+
+        // TABLE
+        const table = document.getElementById("table-body");
+        table.innerHTML = "";
+
+        data.ports.forEach(p => {
+
+            let badgeClass = "low";
+            if (p.severity === "high") badgeClass = "high";
+            else if (p.severity === "medium") badgeClass = "medium";
+
+            table.innerHTML += `
+                <tr>
+                    <td>${p.host}</td>
+                    <td>${p.port}</td>
+                    <td>${p.service}</td>
+                    <td>
+                        <span class="badge ${badgeClass}">
+                            ${p.severity.toUpperCase()}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (err) {
+        console.error("Error fetching data:", err);
+    }
+}
+
+// Auto refresh
+setInterval(fetchData, 5000);
+fetchData();
+</script>
 
 </body>
 </html>
