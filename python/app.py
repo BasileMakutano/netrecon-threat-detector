@@ -10,21 +10,17 @@ app = Flask(__name__)
 DATA_FILE = "../data/nmap.txt"
 HISTORY_FILE = "../data/history.log"
 
-
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 @app.route("/data")
 def data():
     lines = read_file(DATA_FILE)
     ports = extract_open_ports(lines)
-
     alerts, messages = detect_threats(ports)
 
     formatted_ports = []
-
     for p in ports:
         if p["port"] in [22, 3389]:
             severity = "high"
@@ -34,7 +30,7 @@ def data():
             severity = "low"
 
         formatted_ports.append({
-            "host": "target",
+            "host": "local",
             "port": p["port"],
             "service": p["service"],
             "severity": severity
@@ -46,32 +42,24 @@ def data():
         "messages": messages
     })
 
-
 @app.route("/scan")
 def scan():
     os.system("cd ../bash && chmod +x scan.sh && ./scan.sh")
-
     with open(HISTORY_FILE, "a") as f:
-        f.write(f"[{datetime.now()}] Scan executed\n")
-
+        f.write(f"[{datetime.now().isoformat()}] Scan executed\n")
     return redirect("/")
-
 
 @app.route("/report")
 def report():
     lines = read_file(DATA_FILE)
     ports = extract_open_ports(lines)
-
     alerts, messages = detect_threats(ports)
     generate_report(ports, alerts, messages)
-
     return send_file("../data/report.txt", as_attachment=True)
-
 
 @app.route("/history")
 def history():
     return "<br>".join(read_file(HISTORY_FILE))
-
 
 if __name__ == "__main__":
     app.run(debug=True)

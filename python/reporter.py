@@ -1,17 +1,22 @@
 from datetime import datetime
 
 def generate_report(ports, alerts, messages):
-    content = f"NetRecon Report - {datetime.now()}\n\n"
-    content += f"Total Ports: {len(ports)}\n"
-    content += f"Alerts: {alerts}\n\n"
+    content = "NetRecon Threat Detection Report\n"
+    content += f"Generated: {datetime.now()}\n\n"
 
-    content += "Threats:\n"
-    for m in messages:
-        content += f"- {m}\n"
+    content += f"Total Open Ports: {len(ports)}\n"
+    content += f"Alerts Raised: {alerts}\n\n"
 
-    content += "\nPorts:\n"
+    if messages:
+        content += "Detected Anomalies:\n"
+        for m in messages:
+            content += f" - {m}\n"
+    else:
+        content += "No anomalies detected.\n"
+
+    content += "\nObserved Services:\n"
     for p in ports:
-        content += f"{p['port']} - {p['service']}\n"
+        content += f" - Port {p['port']} ({p['service']})\n"
 
     with open("../data/report.txt", "w") as f:
         f.write(content)
