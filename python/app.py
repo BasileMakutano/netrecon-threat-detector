@@ -42,11 +42,18 @@ def data():
         "messages": messages
     })
 
+# ✅ UPDATED: Full data-collection cycle
 @app.route("/scan")
 def scan():
-    os.system("cd ../bash && chmod +x scan.sh && ./scan.sh")
+    os.system("cd ../bash && chmod +x *.sh")
+
+    os.system("cd ../bash && ./scan.sh")
+    os.system("cd ../bash && ./connections.sh")
+    os.system("cd ../bash && sudo ./traffic.sh")
+
     with open(HISTORY_FILE, "a") as f:
-        f.write(f"[{datetime.now().isoformat()}] Scan executed\n")
+        f.write(f"[{datetime.now().isoformat()}] Collection cycle executed\n")
+
     return redirect("/")
 
 @app.route("/report")
